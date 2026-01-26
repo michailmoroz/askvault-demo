@@ -102,35 +102,41 @@ OPENAI_API_KEY=sk-...
 
 ## Design Decisions
 
-### 1. Why Supabase + pgvector?
+### 1. Supabase + pgvector (vs. Pinecone/Weaviate)
 
-**Alternative:** Separate vector DB (Pinecone, Weaviate)
+**Decision:** Integrated solution - auth, database, and vector search in one platform.
 
-**Decision:** Integrated solution - auth, database, and vector search in one platform. Simpler architecture, fewer services to manage, RLS for multi-tenancy built-in.
+**Why:** Simpler architecture, fewer services to manage. RLS for multi-tenancy built-in. HNSW index provides fast cosine similarity search without external dependencies.
 
-### 2. Why 2000 char chunks with 200 overlap?
+### 2. OpenAI text-embedding-3-small (vs. ada-002)
 
-**Tradeoff:** Larger chunks = more context but less precision. Smaller = better precision but fragmented context.
+**Decision:** Newer embedding model with 1536 dimensions.
 
-**Decision:** 2000 chars balances context preservation with retrieval accuracy. 10% overlap prevents cutting sentences mid-thought.
+**Why:** 5x cheaper than ada-002 ($0.02 vs $0.10 per 1M tokens) while delivering better retrieval quality (62.3% vs 61.0% MTEB score). Anthropic doesn't offer embeddings, so OpenAI + Claude is a common production pattern.
 
-### 3. Why Claude Haiku over GPT-4?
+### 3. RecursiveCharacterTextSplitter (2000 chars, 200 overlap)
 
-**Tradeoff:** GPT-4 is more capable but slower and more expensive.
+**Decision:** LangChain's text splitter with paragraph → sentence → word fallback.
 
-**Decision:** For RAG, the model mainly synthesizes retrieved context. Haiku is fast (good for streaming UX), cheap, and accurate enough when context is provided.
+**Why:** 85-90% recall without additional API costs (unlike semantic chunking which requires embeddings per sentence). 10% overlap prevents cutting context mid-thought. Industry standard for RAG applications.
 
-### 4. Why streaming responses?
+### 4. Claude Haiku (vs. GPT-4 / Claude Sonnet)
 
-**Alternative:** Wait for complete response, then display.
+**Decision:** Anthropic's fastest, cheapest model.
 
-**Decision:** Streaming provides immediate feedback. Users see the answer forming, which feels faster even if total time is similar.
+**Why:** For RAG, the LLM synthesizes retrieved context - it doesn't need to "know" the answer. Haiku is fast (good streaming UX), cheap ($0.25/1M input tokens), and accurate when context is provided.
 
-### 5. Why Row Level Security (RLS)?
+### 5. Streaming with Vercel AI SDK
 
-**Alternative:** Application-level authorization checks.
+**Decision:** Server-Sent Events via `streamText()` + `useChat()` hook.
 
-**Decision:** RLS enforces isolation at the database level. Even if application code has bugs, users can't access other users' data. Defense in depth.
+**Why:** Users see answers forming in real-time, which feels faster even if total time is similar. The AI SDK handles SSE, backpressure, and React state automatically.
+
+### 6. Row Level Security (vs. Application-level checks)
+
+**Decision:** Database-enforced tenant isolation via Supabase RLS policies.
+
+**Why:** Defense in depth. Even if application code has bugs, users can't access other users' data. Policies are defined once in SQL and enforced on every query.
 
 ## Project Structure
 
