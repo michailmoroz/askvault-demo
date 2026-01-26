@@ -10,7 +10,7 @@ RAG-powered knowledge vault - upload documents, ask questions, get answers.
 
 ## Demo
 
-> **Live:** [askvault.vercel.app](https://askvault.vercel.app) *(deployment pending)*
+> **Live:** [askvault-demo.vercel.app](https://askvault-demo.vercel.app)
 
 **Features:**
 - Multi-tenant workspaces with isolated knowledge bases
@@ -63,7 +63,7 @@ Query:    Question → Embed → Vector Search (cosine) → Top-5 Chunks → Cla
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.x
 - Supabase account (free tier works)
 - Anthropic API key
 - OpenAI API key
@@ -72,8 +72,8 @@ Query:    Question → Embed → Vector Search (cosine) → Top-5 Chunks → Cla
 
 ```bash
 # Clone & install
-git clone https://github.com/yourusername/askvault.git
-cd askvault
+git clone https://github.com/michailmoroz/askvault-demo.git
+cd askvault-demo
 npm install
 
 # Configure environment

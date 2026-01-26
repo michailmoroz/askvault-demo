@@ -4,10 +4,11 @@ export default defineConfig({
   testDir: './e2e',
   timeout: 30000,
   retries: 1,
+  outputDir: './.agents/screenshots/playwright',
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
   },
   projects: [
     {

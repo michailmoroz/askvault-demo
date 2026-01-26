@@ -1,0 +1,50 @@
+# TechnoVault Inc. Employee Handbook
+Version 3.7 - Effective January 2024
+
+## Company Overview
+
+TechnoVault Inc. was founded in 2018 by Dr. Elena Marchetti and Marcus Wong in Boulder, Colorado. The company specializes in quantum-resistant cryptography solutions for enterprise clients.
+
+## Key Facts
+
+- Headquarters: 742 Quantum Drive, Boulder, CO 80301
+- Employee Count: 847 employees as of Q4 2023
+- Annual Revenue: $127 million USD (FY 2023)
+- Stock Ticker: TVLT (NASDAQ)
+
+## Core Values
+
+1. **Integrity First**: We never compromise on security or ethics
+2. **Innovation Through Collaboration**: Great ideas come from diverse teams
+3. **Customer Obsession**: Every decision starts with the customer
+4. **Sustainable Growth**: We build for the long term
+
+## Benefits Summary
+
+### Health Insurance
+All full-time employees receive comprehensive health coverage through BlueCross BlueShield. The company covers 85% of premium costs for employees and 70% for dependents.
+
+### Retirement
+TechnoVault offers a 401(k) plan with a company match of 6% of salary. Vesting is immediate for the employee contribution and follows a 3-year cliff vesting schedule for employer contributions.
+
+### Paid Time Off
+- Vacation: 20 days per year (accrued monthly)
+- Sick Leave: 12 days per year
+- Personal Days: 3 days per year
+- Parental Leave: 16 weeks paid for all new parents
+
+### Professional Development
+Each employee has an annual learning budget of $3,500 for courses, conferences, and certifications.
+
+## Office Hours
+
+Standard office hours are 9:00 AM to 5:30 PM Mountain Time, Monday through Friday. The company observes 11 paid holidays per year.
+
+## Emergency Contact
+
+For security incidents, contact the Security Operations Center (SOC) at extension 4911 or email security@technovault.example.com
+
+## Document Control
+
+This handbook supersedes all previous versions. Last updated: January 15, 2024
+Document ID: TVI-HR-2024-001
