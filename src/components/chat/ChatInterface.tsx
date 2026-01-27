@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useChat } from 'ai/react';
 import { MessageSquare, Trash2, AlertCircle, FileText } from 'lucide-react';
+import type { SourceReference } from '@/types/chat';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -23,6 +24,10 @@ interface ChatInterfaceProps {
 export function ChatInterface({ workspaceId, documentCount }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Store sources for each assistant message (keyed by message index)
+  const [messageSources, setMessageSources] = useState<Record<number, SourceReference[]>>({});
+  const pendingSourcesRef = useRef<SourceReference[] | null>(null);
+
   const {
     messages,
     input,
@@ -34,6 +39,27 @@ export function ChatInterface({ workspaceId, documentCount }: ChatInterfaceProps
   } = useChat({
     api: '/api/chat',
     body: { workspaceId },
+    onResponse: (response) => {
+      // Capture sources from response header
+      const sourcesHeader = response.headers.get('X-Sources');
+      if (sourcesHeader) {
+        try {
+          pendingSourcesRef.current = JSON.parse(sourcesHeader);
+        } catch (e) {
+          console.error('Failed to parse sources:', e);
+        }
+      }
+    },
+    onFinish: (_message) => {
+      // Associate pending sources with the completed message
+      if (pendingSourcesRef.current) {
+        setMessageSources((prev) => ({
+          ...prev,
+          [messages.length]: pendingSourcesRef.current!,
+        }));
+        pendingSourcesRef.current = null;
+      }
+    },
   });
 
   // Auto-scroll to bottom when new messages arrive
@@ -41,10 +67,11 @@ export function ChatInterface({ workspaceId, documentCount }: ChatInterfaceProps
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Clear all messages
-  const handleClear = () => {
+  // Clear all messages and sources
+  const handleClear = useCallback(() => {
     setMessages([]);
-  };
+    setMessageSources({});
+  }, [setMessages]);
 
   // No documents state
   if (documentCount === 0) {
@@ -113,8 +140,12 @@ export function ChatInterface({ workspaceId, documentCount }: ChatInterfaceProps
             </div>
           ) : (
             <>
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
+              {messages.map((message, index) => (
+                <ChatMessage
+                  key={message.id}
+                  message={message}
+                  sources={message.role === 'assistant' ? messageSources[index] : undefined}
+                />
               ))}
               {isLoading && (messages.length === 0 || messages[messages.length - 1].role === 'user') && (
                 <TypingIndicator />

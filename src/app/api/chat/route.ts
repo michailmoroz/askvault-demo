@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { retrieveRelevantChunks, assembleContext } from '@/lib/rag/retriever';
 import { getClaudeModel, buildSystemPrompt, TEMPERATURE } from '@/lib/llm/claude';
+import type { SourceReference } from '@/types/chat';
 
 // Force Node.js runtime
 export const runtime = 'nodejs';
@@ -118,6 +119,19 @@ export async function POST(request: Request): Promise<Response> {
     const context = assembleContext(chunks);
     const hasContext = chunks.length > 0;
 
+    // Build unique sources for citation legend (deduplicated by documentId)
+    const uniqueDocs = new Map<string, SourceReference>();
+    chunks.forEach((chunk, index) => {
+      if (!uniqueDocs.has(chunk.documentId)) {
+        uniqueDocs.set(chunk.documentId, {
+          index: index + 1,
+          documentId: chunk.documentId,
+          filename: chunk.filename,
+        });
+      }
+    });
+    const sources: SourceReference[] = Array.from(uniqueDocs.values());
+
     // Build system prompt
     const systemPrompt = buildSystemPrompt(context, hasContext);
 
@@ -139,9 +153,12 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    // Return streaming response
+    // Return streaming response with sources header
     try {
-      return result.toDataStreamResponse();
+      const response = result.toDataStreamResponse();
+      // Add sources as header for client to read
+      response.headers.set('X-Sources', JSON.stringify(sources));
+      return response;
     } catch (responseError) {
       console.error('toDataStreamResponse failed:', responseError);
       return NextResponse.json(

@@ -31,3 +31,13 @@ export interface RetrievalOptions {
   threshold?: number;
   limit?: number;
 }
+
+/**
+ * Source reference for displaying in chat UI
+ * Maps [1], [2] citations to actual document filenames
+ */
+export interface SourceReference {
+  index: number;
+  documentId: string;
+  filename: string;
+}

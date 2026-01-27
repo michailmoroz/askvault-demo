@@ -3,12 +3,14 @@
 import { User, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from 'ai/react';
+import type { SourceReference } from '@/types/chat';
 
 interface ChatMessageProps {
   message: Message;
+  sources?: SourceReference[];
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, sources }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
   return (
@@ -33,6 +35,19 @@ export function ChatMessage({ message }: ChatMessageProps) {
         <div className="text-base text-foreground whitespace-pre-wrap break-words leading-relaxed">
           {message.content}
         </div>
+
+        {/* Sources footnote legend - Apple style: subtle, monospace, deferred */}
+        {!isUser && sources && sources.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-border/30">
+            <p className="text-xs text-muted-foreground/70 font-mono tracking-tight">
+              {sources.map((source) => (
+                <span key={source.documentId} className="mr-4">
+                  [{source.index}]&nbsp;{source.filename}
+                </span>
+              ))}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
