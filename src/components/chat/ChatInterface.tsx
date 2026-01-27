@@ -24,8 +24,8 @@ interface ChatInterfaceProps {
 export function ChatInterface({ workspaceId, documentCount }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Store sources for each assistant message (keyed by message index)
-  const [messageSources, setMessageSources] = useState<Record<number, SourceReference[]>>({});
+  // Store sources for each assistant message (keyed by message ID)
+  const [messageSources, setMessageSources] = useState<Record<string, SourceReference[]>>({});
   const pendingSourcesRef = useRef<SourceReference[] | null>(null);
 
   const {
@@ -50,12 +50,12 @@ export function ChatInterface({ workspaceId, documentCount }: ChatInterfaceProps
         }
       }
     },
-    onFinish: (_message) => {
-      // Associate pending sources with the completed message
+    onFinish: (message) => {
+      // Associate pending sources with the completed message (by ID, not index)
       if (pendingSourcesRef.current) {
         setMessageSources((prev) => ({
           ...prev,
-          [messages.length]: pendingSourcesRef.current!,
+          [message.id]: pendingSourcesRef.current!,
         }));
         pendingSourcesRef.current = null;
       }
@@ -140,11 +140,11 @@ export function ChatInterface({ workspaceId, documentCount }: ChatInterfaceProps
             </div>
           ) : (
             <>
-              {messages.map((message, index) => (
+              {messages.map((message) => (
                 <ChatMessage
                   key={message.id}
                   message={message}
-                  sources={message.role === 'assistant' ? messageSources[index] : undefined}
+                  sources={message.role === 'assistant' ? messageSources[message.id] : undefined}
                 />
               ))}
               {isLoading && (messages.length === 0 || messages[messages.length - 1].role === 'user') && (
