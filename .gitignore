@@ -56,3 +56,4 @@ test-results/
 /playwright-report/
 /blob-report/
 .agents/playwright/tests/
+.agents/interview/
