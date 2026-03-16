@@ -1,7 +1,7 @@
 import { streamText } from 'ai';
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { retrieveRelevantChunks, assembleContext } from '@/lib/rag/retriever';
+import { retrieveRelevantChunks, assembleContext, buildDocumentIndexMap } from '@/lib/rag/retriever';
 import { getClaudeModel, buildSystemPrompt, TEMPERATURE } from '@/lib/llm/claude';
 import type { SourceReference } from '@/types/chat';
 
@@ -115,22 +115,26 @@ export async function POST(request: Request): Promise<Response> {
       );
     }
 
-    // Assemble context from chunks
-    const context = assembleContext(chunks);
+    // Build document-to-index mapping (shared between context and sources)
+    const docIndexMap = buildDocumentIndexMap(chunks);
+
+    // Assemble context using consistent document indices
+    const context = assembleContext(chunks, docIndexMap);
     const hasContext = chunks.length > 0;
 
-    // Build unique sources for citation legend (deduplicated by documentId)
-    const uniqueDocs = new Map<string, SourceReference>();
-    chunks.forEach((chunk, index) => {
-      if (!uniqueDocs.has(chunk.documentId)) {
-        uniqueDocs.set(chunk.documentId, {
-          index: index + 1,
+    // Build sources for citation legend using same mapping
+    const sources: SourceReference[] = [];
+    const seenDocs = new Set<string>();
+    for (const chunk of chunks) {
+      if (!seenDocs.has(chunk.documentId)) {
+        seenDocs.add(chunk.documentId);
+        sources.push({
+          index: docIndexMap.get(chunk.documentId)!,
           documentId: chunk.documentId,
           filename: chunk.filename,
         });
       }
-    });
-    const sources: SourceReference[] = Array.from(uniqueDocs.values());
+    }
 
     // Build system prompt
     const systemPrompt = buildSystemPrompt(context, hasContext);
@@ -155,10 +159,11 @@ export async function POST(request: Request): Promise<Response> {
 
     // Return streaming response with sources header
     try {
-      const response = result.toDataStreamResponse();
-      // Add sources as header for client to read
-      response.headers.set('X-Sources', JSON.stringify(sources));
-      return response;
+      return result.toDataStreamResponse({
+        headers: {
+          'X-Sources': JSON.stringify(sources),
+        },
+      });
     } catch (responseError) {
       console.error('toDataStreamResponse failed:', responseError);
       return NextResponse.json(

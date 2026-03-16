@@ -53,11 +53,23 @@ export function ChatInterface({ workspaceId, documentCount }: ChatInterfaceProps
     onFinish: (message) => {
       // Associate pending sources with the completed message (by ID, not index)
       if (pendingSourcesRef.current) {
-        setMessageSources((prev) => ({
-          ...prev,
-          [message.id]: pendingSourcesRef.current!,
-        }));
+        // Capture value BEFORE async setState (React calls updater later!)
+        const allSources = pendingSourcesRef.current;
         pendingSourcesRef.current = null;
+
+        // Filter to only sources actually cited in the response
+        // Look for [1], [2], etc. patterns in the message content
+        const citedIndices = new Set<number>();
+        const citationPattern = /\[(\d+)\]/g;
+        let match;
+        while ((match = citationPattern.exec(message.content)) !== null) {
+          citedIndices.add(parseInt(match[1], 10));
+        }
+
+        // Only include sources that were actually cited
+        const usedSources = allSources.filter((s) => citedIndices.has(s.index));
+
+        setMessageSources((prev) => ({ ...prev, [message.id]: usedSources }));
       }
     },
   });

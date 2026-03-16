@@ -40,12 +40,24 @@ export async function DELETE(
 
     // Delete document (RLS ensures only owner can delete via workspace check)
     // CASCADE constraint will automatically delete chunks
-    const { error: deleteError } = await supabase
+    // IMPORTANT: Use .select().single() to verify deletion actually happened
+    const { data: deletedDocument, error: deleteError } = await supabase
       .from('documents')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select('id, filename')
+      .single();
 
+    // Handle errors
     if (deleteError) {
+      // PGRST116 = "No rows found" - either doesn't exist or RLS blocked it
+      if (deleteError.code === 'PGRST116') {
+        console.error('Document not found or access denied:', id);
+        return NextResponse.json(
+          { error: 'Document not found or you do not have permission to delete it.' },
+          { status: 404 }
+        );
+      }
       console.error('Document deletion failed:', deleteError);
       return NextResponse.json(
         { error: 'Failed to delete document.' },
@@ -53,7 +65,17 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json({ success: true });
+    // Extra safety check
+    if (!deletedDocument) {
+      console.error('No document was deleted (unexpected state)');
+      return NextResponse.json(
+        { error: 'Document could not be deleted.' },
+        { status: 500 }
+      );
+    }
+
+    console.log('Document deleted successfully:', deletedDocument.filename);
+    return NextResponse.json({ success: true, deleted: deletedDocument });
   } catch (error) {
     console.error('Document deletion error:', error);
     return NextResponse.json(

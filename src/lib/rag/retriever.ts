@@ -61,17 +61,43 @@ export async function retrieveRelevantChunks(
 }
 
 /**
- * Assembles retrieved chunks into a context string for the LLM
+ * Builds document-to-index mapping for consistent citation numbering
  * @param chunks - Array of retrieved document chunks
+ * @returns Map of documentId to sequential index (1, 2, 3...)
+ */
+export function buildDocumentIndexMap(chunks: RetrievalResult[]): Map<string, number> {
+  const docIndexMap = new Map<string, number>();
+  let index = 1;
+
+  for (const chunk of chunks) {
+    if (!docIndexMap.has(chunk.documentId)) {
+      docIndexMap.set(chunk.documentId, index++);
+    }
+  }
+
+  return docIndexMap;
+}
+
+/**
+ * Assembles retrieved chunks into a context string for the LLM
+ * Uses document-based indexing so all chunks from same doc get same number
+ * Citation markers are placed at the END to encourage inline citations
+ * @param chunks - Array of retrieved document chunks
+ * @param docIndexMap - Map of documentId to citation index
  * @returns Formatted context string with source attribution
  */
-export function assembleContext(chunks: RetrievalResult[]): string {
+export function assembleContext(
+  chunks: RetrievalResult[],
+  docIndexMap: Map<string, number>
+): string {
   if (chunks.length === 0) {
     return '';
   }
 
-  const contextParts = chunks.map((chunk, index) => {
-    return `[${index + 1}] (${chunk.filename}):\n${chunk.content}`;
+  const contextParts = chunks.map((chunk) => {
+    const index = docIndexMap.get(chunk.documentId) ?? 0;
+    // Put citation at END to discourage Claude from putting citations at start of paragraphs
+    return `Quelle "${chunk.filename}":\n${chunk.content}\n(Zitiere als [${index}])`;
   });
 
   return contextParts.join('\n\n---\n\n');
